@@ -2,7 +2,7 @@ import sys, threading, time, os
 from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout,
-    QProgressBar, QFrame, QPushButton
+    QProgressBar, QFrame, QPushButton, QHBoxLayout
 )
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
@@ -92,7 +92,7 @@ class BluecarMonitor(QWidget):
         return "#ff3300"
 
     def init_ui(self):
-        main_layout = QVBoxLayout()  # Layout principale orizzontale
+        main_layout = QHBoxLayout()  # Layout principale orizzontale
 
 # Colonna sinistra con la batteria verticale
         left_column = QVBoxLayout()
@@ -159,7 +159,7 @@ class BluecarMonitor(QWidget):
         range_layout = QVBoxLayout(range_frame)
 
         range_title = QLabel("Autonomia")
-        range_title.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        range_title.setFont(QFont("Segoe UI", 18, QFont.Bold))
         range_title.setAlignment(Qt.AlignCenter)
 
         self.range_km = QLabel("-- km")
@@ -168,11 +168,11 @@ class BluecarMonitor(QWidget):
         self.range_km.setAlignment(Qt.AlignCenter)
 
         range_wltp_label = QLabel("WLTP: -- km")
-        range_wltp_label.setFont(QFont("Segoe UI", 10))
+        range_wltp_label.setFont(QFont("Segoe UI", 12))
         range_wltp_label.setAlignment(Qt.AlignCenter)
 
         range_calc_label = QLabel("Calcolato: -- km")
-        range_calc_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        range_calc_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
         range_calc_label.setAlignment(Qt.AlignCenter)
 
         range_layout.addWidget(range_title)
@@ -191,12 +191,12 @@ class BluecarMonitor(QWidget):
         info_layout = QVBoxLayout(info_frame)
 
         info_title = QLabel("Informazioni viaggio")
-        info_title.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        info_title.setFont(QFont("Segoe UI", 18, QFont.Bold))
         info_title.setStyleSheet("color: white;")
         info_title.setAlignment(Qt.AlignCenter)
 
         self.info_text = QLabel()
-        self.info_text.setFont(QFont("Segoe UI", 9))
+        self.info_text.setFont(QFont("Segoe UI", 12))
         self.info_text.setStyleSheet("color: white;")
         self.info_text.setAlignment(Qt.AlignLeft)
         self.info_text.setWordWrap(True)
@@ -210,7 +210,7 @@ class BluecarMonitor(QWidget):
             QPushButton {
                 background-color: #ff6666;
                 color: white;
-                font-size: 10px;
+                font-size: 15px;
                 padding: 3px;
                 border-radius: 3px;
                 min-width: 80px;
