@@ -1,4 +1,5 @@
-import sys, threading, time
+import sys, threading, time, os
+from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout,
     QProgressBar, QFrame, QPushButton
@@ -9,64 +10,55 @@ from can_monitor import create_battery_monitor
 import serial
 
 ser = serial.Serial('COM201', 9600, timeout=1)
+
+# Variabili globali
 inizializzato = 0
 inizio = 100
 media = 0
 last = 0
-trip_km = 0.0  # Aggiunta per essere accessibile ovunque
+trip_km = 0.0
+start_time = None  # Data inizio trip
 
 monitorBAT = create_battery_monitor()
 monitorBAT.start()
 
 def algokm(attuale):
-    global inizializzato, inizio, media, trip_km
+    global inizializzato, inizio, media, trip_km, start_time
 
     trip_distance_km = 0
     trip_avg_speed_kmh = 0
     trip_speed_kmh = 0
 
-    if inizializzato == 1:
+    if (inizializzato == 0) and attuale>0:
         ser.write(b'R')
-        inizializzato = 2
+        inizializzato = 1
         inizio = attuale
-    time.sleep(0.1)
-    print("siamo al ciclo")
-    inizializzato += 1
-    print(inizializzato)
+        start_time = datetime.now()  # salva inizio trip
+    time.sleep(10)
+
     line = ser.readline().decode().strip()
-    print(line)
 
     if line.startswith("STATS"):
         parts = line.split(',')
-        trip_distance_km = float(parts[2]) / 1000  # m -> km
-        trip_avg_speed_kmh = float(parts[4]) * 3.6  # m/s -> km/h
+        trip_distance_km = float(parts[2]) / 1000
+        trip_avg_speed_kmh = float(parts[4]) * 3.6
 
         trip_km = trip_distance_km
         trip_speed_kmh = trip_avg_speed_kmh
-        print("roba decodificata")
-        print("kmtrip:", trip_km)
-        print("speed:", trip_speed_kmh)
 
     media = trip_speed_kmh
-    print("inizio:", inizio)
-    print("attuale:", attuale)
     percento = inizio - attuale
-    print("percentuale da inizio:", percento)
+
     if percento > 1:
-        print("stiamofacendo il calcolo")
         kmrim = (trip_km / percento) * attuale
-        print("autonomia:", kmrim)
     else:
         kmrim = 0.0
 
-    if (inizializzato % 5):
-        ser.reset_input_buffer()
-    return kmrim
-
+    ser.reset_input_buffer()#svuota il buffer per rendere il piu nuova possibile l'informazione la prossima volta (idea in beta)
+    return round(kmrim, 1)
 
 class DataSignals(QObject):
     updated = pyqtSignal()
-
 
 class BluecarMonitor(QWidget):
     def __init__(self):
@@ -164,12 +156,25 @@ class BluecarMonitor(QWidget):
         )
 
     def reset_trip(self):
-        global inizializzato, inizio, trip_km
-        inizializzato = 1  # forza reset
+        global inizializzato, inizio, trip_km, start_time
+
+        end_time = datetime.now()
+        if start_time is not None and trip_km > 0:
+            percent_consumed = inizio - self.battery_value
+            self.log_trip(start_time, end_time, trip_km, percent_consumed)
+
+        inizializzato = 0
         trip_km = 0.0
         self.trip_km = 0.0
         self.est_range_km = 0
+        start_time = None
         self.refresh_ui()
+
+    def log_trip(self, start, end, km, percent):
+        os.makedirs("logtrip", exist_ok=True)
+        with open("logtrip/oldtrip.txt", "a") as f:
+            line = f"{start.strftime('%Y-%m-%d %H:%M')} | {end.strftime('%Y-%m-%d %H:%M')} | {km:.2f} km | {percent:.1f}% consumati\n"
+            f.write(line)
 
     def start_recalc_thread(self):
         thread = threading.Thread(target=self.ricalcolo, daemon=True)
@@ -181,8 +186,8 @@ class BluecarMonitor(QWidget):
             charge = monitorBAT.get_charge()
             self.battery_value = charge
             rimanente = algokm(charge)
-            self.trip_km = trip_km  # aggiorna valore in UI
-            if (rimanente == 0.0 and last != 0):
+            self.trip_km = trip_km
+            if rimanente == 0.0 and last != 0:
                 self.est_range_km = last
             else:
                 self.est_range_km = rimanente
@@ -190,7 +195,6 @@ class BluecarMonitor(QWidget):
             self.avg_speed = media
             self.signals.updated.emit()
             time.sleep(5)
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
