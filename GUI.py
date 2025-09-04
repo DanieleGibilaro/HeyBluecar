@@ -9,65 +9,64 @@ from can_monitor import create_battery_monitor
 import serial
 
 ser = serial.Serial('COM201', 9600, timeout=1)
-inizializzato=0
-inizio=100
-media=0
-
-
+inizializzato = 0
+inizio = 100
+media = 0
+last = 0
+trip_km = 0.0  # Aggiunta per essere accessibile ovunque
 
 monitorBAT = create_battery_monitor()
 monitorBAT.start()
 
-
-
 def algokm(attuale):
-    global inizializzato
-    global inizio
-    global media
-    trip_distance_km=0
-    trip_avg_speed_kmh=0
-    trip_speed_kmh=0
-    trip_km=0
-    
-    
-    ser.reset_input_buffer()  # Svuota il buffer
-    if inizializzato==0:
+    global inizializzato, inizio, media, trip_km
+
+    trip_distance_km = 0
+    trip_avg_speed_kmh = 0
+    trip_speed_kmh = 0
+
+    if inizializzato == 1:
         ser.write(b'R')
-        inizializzato=1
-        inizio=attuale
+        inizializzato = 2
+        inizio = attuale
     time.sleep(0.1)
-    
+    print("siamo al ciclo")
+    inizializzato += 1
+    print(inizializzato)
     line = ser.readline().decode().strip()
     print(line)
-   # Legge l'ultimo dato disponibile
+
     if line.startswith("STATS"):
-        # Dividi i valori separati da virgola
         parts = line.split(',')
-            
-        # Estrai i dati necessari (indici basati sul formato STATS)
-        trip_distance_km = float(parts[2]) / 1000  # Converti metri -> km
-        trip_avg_speed_kmh = float(parts[4]) * 3.6  # Converti m/s -> km/h
-            
-        # Assegna alle variabili
+        trip_distance_km = float(parts[2]) / 1000  # m -> km
+        trip_avg_speed_kmh = float(parts[4]) * 3.6  # m/s -> km/h
+
         trip_km = trip_distance_km
         trip_speed_kmh = trip_avg_speed_kmh
-    
-    media=trip_speed_kmh
-    percento=inizio-attuale
-    if percento>1: 
-        kmrim=(trip_km/percento)*attuale
-    else: kmrim="000"
+        print("roba decodificata")
+        print("kmtrip:", trip_km)
+        print("speed:", trip_speed_kmh)
+
+    media = trip_speed_kmh
+    print("inizio:", inizio)
+    print("attuale:", attuale)
+    percento = inizio - attuale
+    print("percentuale da inizio:", percento)
+    if percento > 1:
+        print("stiamofacendo il calcolo")
+        kmrim = (trip_km / percento) * attuale
+        print("autonomia:", kmrim)
+    else:
+        kmrim = 0.0
+
+    if (inizializzato % 5):
+        ser.reset_input_buffer()
     return kmrim
-    
-    
-    
-
-
-
 
 
 class DataSignals(QObject):
     updated = pyqtSignal()
+
 
 class BluecarMonitor(QWidget):
     def __init__(self):
@@ -76,13 +75,12 @@ class BluecarMonitor(QWidget):
         self.setGeometry(100, 100, 800, 480)
         self.setStyleSheet("background-color: #c8f5ff;")
 
-        # Initial values
-        self.battery_value = 00
-        self.est_range_km = 00
+        self.battery_value = 0
+        self.est_range_km = 0
         self.wltp_range_km = 160
-        self.avg_speed = 43  # km/h
+        self.avg_speed = 43
+        self.trip_km = 0.0
 
-        # threading signal
         self.signals = DataSignals()
         self.signals.updated.connect(self.refresh_ui)
 
@@ -137,53 +135,62 @@ class BluecarMonitor(QWidget):
         info_layout.addWidget(self.info_text)
         info_bar.setLayout(info_layout)
 
-        
+        reset_button = QPushButton("Reset Trip")
+        reset_button.setStyleSheet(
+            "background-color: #ff6666; color: white; font-size: 16px; padding: 10px; border-radius: 8px;"
+        )
+        reset_button.clicked.connect(self.reset_trip)
 
         main_layout.addWidget(title)
         main_layout.addWidget(car_image)
         main_layout.addWidget(self.range_km)
         main_layout.addWidget(self.battery_progress)
-        
         main_layout.addStretch()
         main_layout.addWidget(info_bar)
+        main_layout.addWidget(reset_button, alignment=Qt.AlignCenter)
 
         self.setLayout(main_layout)
         self.refresh_ui()
 
     def refresh_ui(self):
-        self.range_km.setText(f"{self.est_range_km} km ({int((self.battery_value/100)*self.wltp_range_km)} km WLTP)")
+        self.range_km.setText(f"{self.est_range_km:.1f} km ({int((self.battery_value/100)*self.wltp_range_km)} km WLTP)")
         self.battery_progress.setValue(self.battery_value)
         self.battery_progress.setStyleSheet(f"""
             QProgressBar {{border:2px solid #0057a8;border-radius:10px;text-align:center;}}
             QProgressBar::chunk {{background-color:{self.get_battery_color(self.battery_value)};}}
         """)
         self.info_text.setText(
-            f" Velocità media: {self.avg_speed} km/h "
+            f"Velocità media: {self.avg_speed:.1f} km/h\nTrip km: {self.trip_km:.2f} km"
         )
 
-    # manual simulate button
-    def update_values(self):
-        self.battery_value = (self.battery_value - 10) % 101
-        self.est_range_km = max(0, int((self.battery_value/100)*self.wltp_range_km))
-        self.avg_speed = (self.avg_speed + 5) % 120
+    def reset_trip(self):
+        global inizializzato, inizio, trip_km
+        inizializzato = 1  # forza reset
+        trip_km = 0.0
+        self.trip_km = 0.0
+        self.est_range_km = 0
         self.refresh_ui()
 
-    # separate recalculation thread
     def start_recalc_thread(self):
         thread = threading.Thread(target=self.ricalcolo, daemon=True)
         thread.start()
 
     def ricalcolo(self):
-        """Threaded loop – update variables every 5 s (placeholder logic)."""
+        global last, trip_km
         while True:
-            # placeholder for external-controlled logic
-            # here just increment speed and decrement battery for demo
             charge = monitorBAT.get_charge()
             self.battery_value = charge
-            self.est_range_km = algokm(charge)
-            self.avg_speed = 0
+            rimanente = algokm(charge)
+            self.trip_km = trip_km  # aggiorna valore in UI
+            if (rimanente == 0.0 and last != 0):
+                self.est_range_km = last
+            else:
+                self.est_range_km = rimanente
+                last = rimanente
+            self.avg_speed = media
             self.signals.updated.emit()
             time.sleep(5)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
