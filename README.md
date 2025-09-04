@@ -1,0 +1,1 @@
+Hi, this is a software ive developed with the idea of bringing a new life in the Pininfarina Bluecar infotainiment system, my main goal is to have a guessometer and bluetooth audio, other stuff may appear in the future 
