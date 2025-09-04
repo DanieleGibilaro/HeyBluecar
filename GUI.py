@@ -1,4 +1,3 @@
-
 import sys
 import threading
 import time
@@ -706,17 +705,13 @@ class MapTab(QWidget):
         layout.addWidget(self.mdi_area)
         self.setLayout(layout)
 
-        # Avvia automaticamente la mappa
+        # Avvia automaticamente MSPaint invece della mappa
         if test == 0:
             QTimer.singleShot(1000, self.start_map)
 
     def start_map(self):
-        """Avvia avit.exe e lo integra nell'area MDI"""
-        exe_path = os.path.join(".", "avit12", "avit.exe")
-        if not os.path.exists(exe_path):
-            exe_path = os.path.join(".", "avit.exe")
-        if not os.path.exists(exe_path):
-            return
+        """Avvia mspaint.exe e lo integra nell'area MDI"""
+        exe_path = "mspaint.exe"
 
         if not win32_available:
             try:
@@ -759,7 +754,7 @@ class MapTab(QWidget):
                 if wid_pid == pid:
                     found.append(hwnd)
             except Exception:
-                pass
+                                pass
 
         while time.time() < end and not found:
             try:
@@ -873,9 +868,9 @@ class SettingsTab(QWidget):
         close_app_btn = QPushButton("⏹️ CHIUDI APP")
         mod_ice_btn = QPushButton("❄️ MOD ICE")
         restart_btn = QPushButton("🔄 RIAVVIA")
-        self.dark_mode_btn = QPushButton("🌙 DARK MODE")
+        
 
-        buttons = [test_pl_btn, close_app_btn, mod_ice_btn, restart_btn, self.dark_mode_btn]
+        buttons = [test_pl_btn, close_app_btn, mod_ice_btn, restart_btn,]
 
         for btn in buttons:
             btn.setFixedHeight(60)
@@ -904,7 +899,7 @@ class SettingsTab(QWidget):
 
         close_app_btn.clicked.connect(self.close_app)
         restart_btn.clicked.connect(self.restart_app)
-        self.dark_mode_btn.clicked.connect(self.toggle_dark_mode)
+        
 
         layout.addStretch()
         self.setLayout(layout)
