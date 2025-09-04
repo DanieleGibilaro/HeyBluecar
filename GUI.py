@@ -1,4 +1,4 @@
-# t12_updated.py
+
 import sys
 import threading
 import time
@@ -8,9 +8,9 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QVBoxLayout, QProgressBar, QFrame,
     QPushButton, QHBoxLayout, QTabWidget, QListWidget, QListWidgetItem,
-    QStyle, QStyleFactory
+    QStyle, QStyleFactory, QMdiArea, QMdiSubWindow
 )
-from PyQt5.QtGui import QFont, QPixmap, QWindow, QGuiApplication, QIcon, QPalette, QColor
+from PyQt5.QtGui import QFont, QPixmap, QWindow, QGuiApplication, QIcon, QPalette, QColor, QLinearGradient
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QProcess, QTimer
 
 # Optional imports / platform-specific
@@ -149,31 +149,64 @@ class TripTab(QWidget):
 
     def init_ui(self):
         main_layout = QHBoxLayout()
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setContentsMargins(15, 15, 15, 15)
         main_layout.setSpacing(15)
         
+        # Sfondo con gradiente automotive
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(20, 30, 40))
+        gradient.setColorAt(1, QColor(10, 15, 25))
+        palette.setBrush(QPalette.Window, gradient)
+        self.setPalette(palette)
+
         left_column = QVBoxLayout()
         left_column.setContentsMargins(0, 0, 0, 0)
-        left_column.setSpacing(10)
+        left_column.setSpacing(15)
 
         battery_frame = QFrame()
         battery_frame.setFixedWidth(100)
         battery_frame.setObjectName("batteryFrame")
+        battery_frame.setStyleSheet("""
+            QFrame#batteryFrame {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #2a3b4d, stop: 1 #1e2a38);
+                border: 2px solid #3a5066;
+                border-radius: 12px;
+                padding: 5px;
+            }
+        """)
         battery_layout = QVBoxLayout(battery_frame)
-        battery_layout.setContentsMargins(5, 5, 5, 5)
+        battery_layout.setContentsMargins(8, 8, 8, 8)
         battery_layout.setSpacing(10)
 
         battery_label = QLabel("BATTERIA")
-        battery_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        battery_label.setFont(QFont("Arial", 10,5, QFont.Bold))
         battery_label.setAlignment(Qt.AlignCenter)
-        battery_label.setObjectName("batteryLabel")
+        battery_label.setStyleSheet("color: #e0e0e0; background: transparent;")
 
         self.battery_progress = QProgressBar()
         self.battery_progress.setOrientation(Qt.Vertical)
         self.battery_progress.setTextVisible(True)
-        self.battery_progress.setFixedSize(70, 250)
+        self.battery_progress.setFixedSize(70, 220)
         self.battery_progress.setFormat("%p%")
-        self.battery_progress.setObjectName("batteryProgress")
+        self.battery_progress.setStyleSheet("""
+            QProgressBar {
+                background: #1a2530;
+                border: 2px solid #3a5066;
+                border-radius: 8px;
+                text-align: center;
+                color: white;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #00ff88, stop: 0.5 #00cc66, stop: 1 #00aa44);
+                border-radius: 6px;
+                margin: 2px;
+            }
+        """)
 
         battery_layout.addWidget(battery_label)
         battery_layout.addWidget(self.battery_progress, 0, Qt.AlignCenter)
@@ -187,25 +220,44 @@ class TripTab(QWidget):
         center_column.setSpacing(15)
 
         title = QLabel("BLUECAR MONITOR")
-        title.setFont(QFont("Segoe UI", 28, QFont.Bold))
+        title.setFont(QFont("Arial", 24, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
-        title.setObjectName("mainTitle")
+        title.setStyleSheet("""
+            color: #00ccff;
+            background: transparent;
+            text-shadow: 1px 1px 2px #000000;
+        """)
 
         car_image = QLabel()
         if test == 1:
-            car_image.setText("IMMAGINE BLUECAR\n(Modalità Test)")
+            car_image.setText("🚗 BLUECAR\n(Modalità Test)")
             car_image.setAlignment(Qt.AlignCenter)
-            car_image.setFixedSize(280, 150)
-            car_image.setObjectName("carImagePlaceholder")
+            car_image.setFixedSize(240, 140)
+            car_image.setStyleSheet("""
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #3a5066, stop: 1 #2a3b4d);
+                color: #00ccff;
+                border: 2px solid #4a6580;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 14px;
+            """)
         else:
             try:
-                pixmap = QPixmap("bluecar_icon.png").scaled(280, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap = QPixmap("bluecar_icon.png").scaled(240, 140, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 car_image.setPixmap(pixmap)
                 car_image.setAlignment(Qt.AlignCenter)
-                car_image.setObjectName("carImage")
+                car_image.setStyleSheet("background: transparent;")
             except Exception:
-                car_image.setText("IMMAGINE BLUECAR")
-                car_image.setObjectName("carImagePlaceholder")
+                car_image.setText("🚗 BLUECAR")
+                car_image.setStyleSheet("""
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #3a5066, stop: 1 #2a3b4d);
+                    color: #00ccff;
+                    border: 2px solid #4a6580;
+                    border-radius: 12px;
+                    font-weight: bold;
+                """)
 
         center_column.addWidget(title)
         center_column.addWidget(car_image)
@@ -217,29 +269,38 @@ class TripTab(QWidget):
 
         range_frame = QFrame()
         range_frame.setObjectName("rangeFrame")
+        range_frame.setStyleSheet("""
+            QFrame#rangeFrame {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #2a3b4d, stop: 1 #1e2a38);
+                border: 2px solid #3a5066;
+                border-radius: 12px;
+                padding: 10px;
+            }
+        """)
         range_layout = QVBoxLayout(range_frame)
-        range_layout.setContentsMargins(10, 10, 10, 10)
+        range_layout.setContentsMargins(8, 8, 8, 8)
         range_layout.setSpacing(10)
 
         range_title = QLabel("AUTONOMIA")
-        range_title.setFont(QFont("Segoe UI", 18, QFont.Bold))
+        range_title.setFont(QFont("Arial", 16, QFont.Bold))
         range_title.setAlignment(Qt.AlignCenter)
-        range_title.setObjectName("rangeTitle")
+        range_title.setStyleSheet("color: #00ccff; background: transparent;")
 
         self.range_km = QLabel("-- km")
-        self.range_km.setFont(QFont("Segoe UI", 28, QFont.Bold))
+        self.range_km.setFont(QFont("Arial", 28, QFont.Bold))
         self.range_km.setAlignment(Qt.AlignCenter)
-        self.range_km.setObjectName("rangeValue")
+        self.range_km.setStyleSheet("color: #00ff88; background: transparent;")
 
         range_wltp_label = QLabel("WLTP: -- km")
-        range_wltp_label.setFont(QFont("Segoe UI", 14))
+        range_wltp_label.setFont(QFont("Arial", 12))
         range_wltp_label.setAlignment(Qt.AlignCenter)
-        range_wltp_label.setObjectName("wltpLabel")
+        range_wltp_label.setStyleSheet("color: #a0a0a0; background: transparent;")
 
         range_calc_label = QLabel("Calcolato: -- km")
-        range_calc_label.setFont(QFont("Segoe UI", 14, QFont.Bold))
+        range_calc_label.setFont(QFont("Arial", 12, QFont.Bold))
         range_calc_label.setAlignment(Qt.AlignCenter)
-        range_calc_label.setObjectName("calcLabel")
+        range_calc_label.setStyleSheet("color: #00ccff; background: transparent;")
 
         range_layout.addWidget(range_title)
         range_layout.addWidget(self.range_km)
@@ -249,29 +310,57 @@ class TripTab(QWidget):
 
         info_frame = QFrame()
         info_frame.setObjectName("infoFrame")
+        info_frame.setStyleSheet("""
+            QFrame#infoFrame {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #006633, stop: 1 #004422);
+                border: 2px solid #008855;
+                border-radius: 12px;
+                padding: 10px;
+            }
+        """)
         info_layout = QVBoxLayout(info_frame)
-        info_layout.setContentsMargins(10, 10, 10, 10)
+        info_layout.setContentsMargins(8, 8, 8, 8)
         info_layout.setSpacing(10)
 
-        info_title = QLabel("INFORMAZIONI VIAGGIO")
-        info_title.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        info_title = QLabel("INFO VIAGGIO")
+        info_title.setFont(QFont("Arial", 14, QFont.Bold))
         info_title.setAlignment(Qt.AlignCenter)
-        info_title.setObjectName("infoTitle")
+        info_title.setStyleSheet("color: #ffffff; background: transparent;")
 
         self.info_text = QLabel()
-        self.info_text.setFont(QFont("Segoe UI", 14))
+        self.info_text.setFont(QFont("Arial", 12))
         self.info_text.setAlignment(Qt.AlignLeft)
         self.info_text.setWordWrap(True)
-        self.info_text.setObjectName("infoText")
+        self.info_text.setStyleSheet("color: #e0ffe0; background: transparent;")
 
         info_layout.addWidget(info_title)
         info_layout.addWidget(self.info_text)
         info_layout.addStretch()
 
-        reset_button = QPushButton("RESET TRIP")
-        reset_button.setFixedHeight(50)
-        reset_button.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        reset_button.setObjectName("resetButton")
+        reset_button = QPushButton("🔄 RESET TRIP")
+        reset_button.setFixedHeight(45)
+        reset_button.setFont(QFont("Arial", 12, QFont.Bold))
+        reset_button.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #ff5555, stop: 1 #cc3333);
+                color: white;
+                border: 2px solid #ff7777;
+                border-radius: 8px;
+                padding: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #ff7777, stop: 1 #dd5555);
+                border: 2px solid #ff9999;
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #cc3333, stop: 1 #aa2222);
+            }
+        """)
         reset_button.clicked.connect(self.reset_trip)
 
         right_column.addWidget(range_frame)
@@ -289,14 +378,6 @@ class TripTab(QWidget):
         self.range_km.setText(f"{est_range_km:.1f} km")
         self.battery_progress.setValue(int(battery_value))
         self.info_text.setText(f"Velocità media: {avg_speed:.1f} km/h\nTrip km: {trip_km:.2f} km\nWLTP: {int((battery_value/100)*wltp_range_km)} km")
-
-    @staticmethod
-    def get_battery_color(value):
-        if value > 70:
-            return "#00cc66"
-        elif value > 30:
-            return "#ffcc00"
-        return "#ff3300"
 
     def reset_trip(self):
         global inizializzato, inizio, trip_km, start_time
@@ -358,6 +439,16 @@ class MediaTab(QWidget):
         super().__init__(parent)
         self.connected_process = None
         self.volume = None
+        
+        # Sfondo con gradiente automotive
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(20, 30, 40))
+        gradient.setColorAt(1, QColor(10, 15, 25))
+        palette.setBrush(QPalette.Window, gradient)
+        self.setPalette(palette)
+        
         self.init_ui()
 
     def init_ui(self):
@@ -365,37 +456,97 @@ class MediaTab(QWidget):
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(15)
 
-        title = QLabel("MEDIA E BLUETOOTH")
-        title.setFont(QFont("Segoe UI", 22, QFont.Bold))
+        title = QLabel("🎵 MEDIA & BLUETOOTH")
+        title.setFont(QFont("Arial", 10, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
-        title.setObjectName("mediaTitle")
+        title.setStyleSheet("""
+            color: #00ccff;
+            background: transparent;
+            text-shadow: 1px 1px 2px #000000;
+        """)
         layout.addWidget(title)
 
-        devices_label = QLabel("Dispositivi Bluetooth disponibili:")
-        devices_label.setFont(QFont("Segoe UI", 16))
-        devices_label.setObjectName("devicesLabel")
+        devices_label = QLabel("Dispositivi Bluetooth:")
+        devices_label.setFont(QFont("Arial", 12, QFont.Bold))
+        devices_label.setStyleSheet("color: #e0e0e0; background: transparent;")
         layout.addWidget(devices_label)
 
         self.devices_list = QListWidget()
-        self.devices_list.setFont(QFont("Segoe UI", 14))
-        self.devices_list.setObjectName("devicesList")
+        self.devices_list.setFont(QFont("Arial", 10))
+        self.devices_list.setStyleSheet("""
+            QListWidget {
+                background: #1a2530;
+                color: #e0e0e0;
+                border: 2px solid #3a5066;
+                border-radius: 8px;
+                padding: 5px;
+            }
+            QListWidget::item {
+                padding: 6px;
+                border-bottom: 1px solid #2a3b4d;
+            }
+            QListWidget::item:selected {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #00ccff, stop: 1 #0088cc);
+                color: white;
+                border-radius: 4px;
+            }
+        """)
         layout.addWidget(self.devices_list)
 
-        refresh_btn = QPushButton("AGGIORNA DISPOSITIVI")
-        refresh_btn.setFixedHeight(60)
-        refresh_btn.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        refresh_btn.setObjectName("refreshButton")
+        refresh_btn = QPushButton("🔄 AGGIORNA")
+        refresh_btn.setFixedHeight(50)
+        refresh_btn.setFont(QFont("Arial", 14, QFont.Bold))
+        refresh_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #3a5066, stop: 1 #2a3b4d);
+                color: #00ccff;
+                border: 2px solid #4a6580;
+                border-radius: 8px;
+                padding: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #4a6580, stop: 1 #3a5066);
+                border: 2px solid #5a7590;
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                    stop: 0 #2a3b4d, stop: 1 #1e2a38);
+            }
+        """)
         refresh_btn.clicked.connect(self.refresh_devices)
         layout.addWidget(refresh_btn)
 
         bt_buttons_layout = QHBoxLayout()
         bt_buttons_layout.setSpacing(15)
-        self.connect_btn = QPushButton("CONNETTI")
-        self.disconnect_btn = QPushButton("DISCONNETTI")
+        self.connect_btn = QPushButton("📱 CONNETTI")
+        self.disconnect_btn = QPushButton("❌ DISCONNETTI")
         for btn in [self.connect_btn, self.disconnect_btn]:
-            btn.setFixedHeight(60)
-            btn.setFont(QFont("Segoe UI", 16, QFont.Bold))
-            btn.setObjectName("btButton")
+            btn.setFixedHeight(50)
+            btn.setFont(QFont("Arial", 14, QFont.Bold))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #00cc66, stop: 1 #00aa44);
+                    color: white;
+                    border: 2px solid #00ee77;
+                    border-radius: 8px;
+                    padding: 5px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #00ee77, stop: 1 #00cc66);
+                    border: 2px solid #00ff88;
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #00aa44, stop: 1 #008833);
+                }
+            """)
         bt_buttons_layout.addWidget(self.connect_btn)
         bt_buttons_layout.addWidget(self.disconnect_btn)
         layout.addLayout(bt_buttons_layout)
@@ -404,20 +555,38 @@ class MediaTab(QWidget):
         self.disconnect_btn.clicked.connect(self.disconnect_device)
 
         # Volume UI
-        volume_label = QLabel("VOLUME")
-        volume_label.setFont(QFont("Segoe UI", 20, QFont.Bold))
+        volume_label = QLabel("🔊 VOLUME")
+        volume_label.setFont(QFont("Arial", 18, QFont.Bold))
         volume_label.setAlignment(Qt.AlignCenter)
-        volume_label.setObjectName("volumeTitle")
+        volume_label.setStyleSheet("color: #00ccff; background: transparent;")
         layout.addWidget(volume_label)
 
         volume_layout = QHBoxLayout()
         volume_layout.setSpacing(30)
-        self.volume_down = QPushButton("-")
-        self.volume_up = QPushButton("+")
+        self.volume_down = QPushButton("🔉 -")
+        self.volume_up = QPushButton("🔊 +")
         for btn in [self.volume_down, self.volume_up]:
-            btn.setFixedSize(100, 100)
-            btn.setFont(QFont("Segoe UI", 32, QFont.Bold))
-            btn.setObjectName("volumeButton")
+            btn.setFixedSize(80, 80)
+            btn.setFont(QFont("Arial", 18, QFont.Bold))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #3a5066, stop: 1 #2a3b4d);
+                    color: #00ccff;
+                    border: 2px solid #4a6580;
+                    border-radius: 40px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #4a6580, stop: 1 #3a5066);
+                    border: 2px solid #5a7590;
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #2a3b4d, stop: 1 #1e2a38);
+                }
+            """)
         volume_layout.addStretch()
         volume_layout.addWidget(self.volume_down)
         volume_layout.addWidget(self.volume_up)
@@ -436,8 +605,8 @@ class MediaTab(QWidget):
         self.devices_list.clear()
         dispositivi = rileva_dispositivi()
         for nome, dev_id in dispositivi:
-            item = QListWidgetItem(nome)
-            item.setFont(QFont("Segoe UI", 14))
+            item = QListWidgetItem(f"📱 {nome}")
+            item.setFont(QFont("Arial", 12))
             item.setData(Qt.UserRole, dev_id)
             self.devices_list.addItem(item)
 
@@ -446,7 +615,6 @@ class MediaTab(QWidget):
         if item:
             dev_id = item.data(Qt.UserRole)
             try:
-                # avvia il processo e lo mantiene aperto (così la connessione rimane)
                 proc = subprocess.Popen(
                     ["bluetoothc.exe", "dispositivi", "connetti", dev_id]
                 )
@@ -456,7 +624,6 @@ class MediaTab(QWidget):
                 print("Errore nella connessione:", e)
 
     def disconnect_device(self):
-        # uccidi tutti i processi bluetoothc.exe
         for proc in psutil.process_iter(['pid', 'name']):
             try:
                 if proc.info['name'] and proc.info['name'].lower() == "bluetoothc.exe":
@@ -499,80 +666,68 @@ class MediaTab(QWidget):
 
 
 class MapTab(QWidget):
-    """Tab per la visualizzazione della mappa di navigazione (tentativo di embed su Windows)"""
+    """Tab per la visualizzazione della mappa di navigazione con MDI"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
         self.process = None
         self.container = None
-        self.placeholder = None
+        self.sub_window = None
+        
+        # Sfondo nero per contrasto con la mappa
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        palette.setColor(QPalette.Window, QColor(0, 0, 0))
+        self.setPalette(palette)
+        
         self.init_ui()
 
     def init_ui(self):
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(15, 15, 15, 15)
-        self.layout.setSpacing(15)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        title = QLabel("MAPPA DI NAVIGAZIONE")
-        title.setFont(QFont("Segoe UI", 22, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
-        title.setObjectName("mapTitle")
-        self.layout.addWidget(title)
+        # Area MDI per contenere la mappa
+        self.mdi_area = QMdiArea()
+        self.mdi_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.mdi_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.mdi_area.setViewMode(QMdiArea.SubWindowView)
+        self.mdi_area.setStyleSheet("""
+            QMdiArea {
+                background-color: #000000;
+                border: none;
+            }
+            QMdiSubWindow {
+                background: transparent;
+                border: none;
+            }
+        """)
+        
+        layout.addWidget(self.mdi_area)
+        self.setLayout(layout)
 
-        self.placeholder = QLabel("Integrazione Mappa (app.exe)")
-        self.placeholder.setAlignment(Qt.AlignCenter)
-        self.placeholder.setObjectName("mapPlaceholder")
-        self.layout.addWidget(self.placeholder)
-
-        # pulsante per aprire / riavviare la mappa dentro la tab
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(15)
-        self.open_map_btn = QPushButton("APRI MAPPA INTERNA")
-        self.open_map_btn.setFixedHeight(60)
-        self.open_map_btn.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        self.open_map_btn.setObjectName("mapButton")
-        self.open_map_btn.clicked.connect(self.start_map)
-        btn_layout.addWidget(self.open_map_btn)
-
-        self.close_map_btn = QPushButton("CHIUDI MAPPA")
-        self.close_map_btn.setFixedHeight(60)
-        self.close_map_btn.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        self.close_map_btn.setObjectName("mapButton")
-        self.close_map_btn.clicked.connect(self.close_map)
-        btn_layout.addWidget(self.close_map_btn)
-
-        self.layout.addLayout(btn_layout)
-        self.setLayout(self.layout)
-
-        # Se in test -> non avvia la mappa
+        # Avvia automaticamente la mappa
         if test == 0:
-            # puoi avviarla automaticamente se vuoi
-            pass
+            QTimer.singleShot(1000, self.start_map)
 
     def start_map(self):
-        """Avvia avit.exe e prova ad embedderlo nella tab (solo Windows)."""
+        """Avvia avit.exe e lo integra nell'area MDI"""
         exe_path = os.path.join(".", "avit12", "avit.exe")
         if not os.path.exists(exe_path):
-            # tenta percorso alternativo relativo
             exe_path = os.path.join(".", "avit.exe")
         if not os.path.exists(exe_path):
-            self.placeholder.setText("avit.exe non trovato nel percorso atteso.")
             return
 
-        # Se pywin32 non disponibile -> fallback: apri esternamente e mostra info
         if not win32_available:
             try:
                 subprocess.Popen([exe_path])
-                self.placeholder.setText("avvio mappa esternamente (pywin32 non installato).")
-            except Exception as e:
-                self.placeholder.setText(f"Errore avvio mappa esterna: {e}")
+            except Exception:
+                pass
             return
 
-        # Use QProcess to start so we can get PID
         try:
             if self.process is not None:
                 try:
-                    # se già in esecuzione, uccidi e riavvia
                     pid_running = int(self.process.processId()) if self.process.processId() else None
                     if pid_running:
                         for p in psutil.process_iter(['pid', 'name']):
@@ -584,24 +739,20 @@ class MapTab(QWidget):
             self.process = QProcess(self)
             self.process.started.connect(self._on_process_started)
             self.process.start(exe_path)
-        except Exception as e:
-            self.placeholder.setText(f"Errore avvio processo: {e}")
+        except Exception:
+            pass
 
     def _on_process_started(self):
-        """Dopo lo start, prova a trovare la window handle e embedderla."""
-        # attendi un pochino che la finestra venga creata dall'app esterna
-        QTimer.singleShot(400, self._try_embed_window)
+        """Dopo lo start, prova a trovare la window handle e integrarla in MDI"""
+        QTimer.singleShot(1000, self._try_embed_window)
 
     def _find_hwnd_for_pid(self, pid, timeout=5.0):
-        """
-        Cerca una finestra top-level per el PID specificato (usa win32).
-        """
+        """Cerca una finestra top-level per il PID specificato"""
         end = time.time() + timeout
         found = []
 
         def enum_cb(hwnd, _):
             try:
-                # consider only visible top-level windows
                 if not win32gui.IsWindowVisible(hwnd):
                     return
                 _, wid_pid = win32process.GetWindowThreadProcessId(hwnd)
@@ -627,39 +778,44 @@ class MapTab(QWidget):
             pid = None
 
         if not pid:
-            self.placeholder.setText("Impossibile ottenere PID del processo mappa.")
             return
 
-        hwnd = self._find_hwnd_for_pid(pid, timeout=5.0)
+        hwnd = self._find_hwnd_for_pid(pid, timeout=3.0)
         if not hwnd:
-            self.placeholder.setText("Impossibile trovare la finestra della mappa; è stata avviata esternamente.")
             return
 
-        # Create QWindow from native handle and embed
+        # Crea un QWindow dal native handle
         try:
             app_window = QWindow.fromWinId(hwnd)
-            container = QWidget.createWindowContainer(app_window, self)
-            container.setMinimumSize(640, 360)
-            # Remove placeholder and insert container
-            try:
-                self.layout.removeWidget(self.placeholder)
-                self.placeholder.deleteLater()
-            except Exception:
-                pass
-            self.layout.insertWidget(1, container)
-            self.container = container
-            self.placeholder = None
-        except Exception as e:
-            self.placeholder.setText(f"Errore embedding finestra: {e}")
+            
+            # Crea un widget container per la finestra
+            container = QWidget.createWindowContainer(app_window)
+            container.setMinimumSize(780, 430)
+            
+            # Crea una subwindow MDI e aggiungi il container
+            self.sub_window = QMdiSubWindow()
+            self.sub_window.setWidget(container)
+            self.sub_window.setWindowFlags(Qt.FramelessWindowHint)
+            self.sub_window.setWindowState(Qt.WindowMaximized)
+            
+            # Rimuovi bordi e titolo dalla subwindow
+            self.sub_window.setStyleSheet("""
+                QMdiSubWindow {
+                    background: transparent;
+                    border: none;
+                }
+            """)
+            
+            # Aggiungi la subwindow all'area MDI
+            self.mdi_area.addSubWindow(self.sub_window)
+            self.sub_window.showMaximized()
+            
+        except Exception:
+            pass
 
     def close_map(self):
-        """Chiude e/uccide il processo della mappa e rimuove il container."""
+        """Chiude il processo della mappa"""
         try:
-            if self.container:
-                self.layout.removeWidget(self.container)
-                self.container.deleteLater()
-                self.container = None
-            # kill process if exists
             if self.process:
                 try:
                     pid = int(self.process.processId())
@@ -669,14 +825,14 @@ class MapTab(QWidget):
                 except Exception:
                     pass
                 self.process = None
-            # restore placeholder
-            if self.placeholder is None:
-                self.placeholder = QLabel("Integrazione Mappa (app.exe)")
-                self.placeholder.setAlignment(Qt.AlignCenter)
-                self.placeholder.setObjectName("mapPlaceholder")
-                self.layout.insertWidget(1, self.placeholder)
-        except Exception as e:
-            print("Errore close_map:", e)
+            
+            # Rimuovi tutte le subwindows
+            for sub_window in self.mdi_area.subWindowList():
+                self.mdi_area.removeSubWindow(sub_window)
+                sub_window.deleteLater()
+                
+        except Exception:
+            pass
 
 
 class SettingsTab(QWidget):
@@ -685,6 +841,16 @@ class SettingsTab(QWidget):
         super().__init__(parent)
         self.parent = parent
         self.dark_mode_enabled = False
+        
+        # Sfondo con gradiente automotive
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(20, 30, 40))
+        gradient.setColorAt(1, QColor(10, 15, 25))
+        palette.setBrush(QPalette.Window, gradient)
+        self.setPalette(palette)
+        
         self.init_ui()
 
     def init_ui(self):
@@ -692,25 +858,48 @@ class SettingsTab(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
 
-        title = QLabel("IMPOSTAZIONI")
-        title.setFont(QFont("Segoe UI", 22, QFont.Bold))
+        title = QLabel("⚙️ IMPOSTAZIONI")
+        title.setFont(QFont("Arial", 22, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
-        title.setObjectName("settingsTitle")
+        title.setStyleSheet("""
+            color: #00ccff;
+            background: transparent;
+            text-shadow: 1px 1px 2px #000000;
+        """)
         layout.addWidget(title)
 
         # Pulsanti principali
-        test_pl_btn = QPushButton("TEST PL")
-        close_app_btn = QPushButton("CHIUDI APP")
-        mod_ice_btn = QPushButton("MOD ICE")
-        restart_btn = QPushButton("RIAVVIA")
-        self.dark_mode_btn = QPushButton("DARK MODE")
+        test_pl_btn = QPushButton("🧪 TEST PL")
+        close_app_btn = QPushButton("⏹️ CHIUDI APP")
+        mod_ice_btn = QPushButton("❄️ MOD ICE")
+        restart_btn = QPushButton("🔄 RIAVVIA")
+        self.dark_mode_btn = QPushButton("🌙 DARK MODE")
 
         buttons = [test_pl_btn, close_app_btn, mod_ice_btn, restart_btn, self.dark_mode_btn]
 
         for btn in buttons:
-            btn.setFixedHeight(70)
-            btn.setFont(QFont("Segoe UI", 18, QFont.Bold))
-            btn.setObjectName("settingsButton")
+            btn.setFixedHeight(60)
+            btn.setFont(QFont("Arial", 16, QFont.Bold))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #3a5066, stop: 1 #2a3b4d);
+                    color: #00ccff;
+                    border: 2px solid #4a6580;
+                    border-radius: 10px;
+                    padding: 5px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #4a6580, stop: 1 #3a5066);
+                    border: 2px solid #5a7590;
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                        stop: 0 #2a3b4d, stop: 1 #1e2a38);
+                }
+            """)
             layout.addWidget(btn)
 
         close_app_btn.clicked.connect(self.close_app)
@@ -724,7 +913,6 @@ class SettingsTab(QWidget):
         QApplication.quit()
 
     def restart_app(self):
-        # semplice restart (riavvia lo script)
         try:
             python = sys.executable
             os.execv(python, [python] + sys.argv)
@@ -734,20 +922,17 @@ class SettingsTab(QWidget):
     def toggle_dark_mode(self):
         app = QApplication.instance()
         if not self.dark_mode_enabled:
-            # Attiva dark mode
             self.apply_dark_style()
-            self.dark_mode_btn.setText("LIGHT MODE")
+            self.dark_mode_btn.setText("☀️ LIGHT MODE")
             self.dark_mode_enabled = True
         else:
-            # Disattiva dark mode
             self.apply_light_style()
-            self.dark_mode_btn.setText("DARK MODE")
+            self.dark_mode_btn.setText("🌙 DARK MODE")
             self.dark_mode_enabled = False
             
     def apply_dark_style(self):
-        """Applica uno stile dark mode completo all'applicazione"""
         dark_palette = QPalette()
-        dark_palette.setColor(QPalette.Window, QColor(30, 30, 30))
+        dark_palette.setColor(QPalette.Window, QColor(20, 30, 40))
         dark_palette.setColor(QPalette.WindowText, QColor(220, 220, 220))
         dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
         dark_palette.setColor(QPalette.AlternateBase, QColor(45, 45, 45))
@@ -764,268 +949,172 @@ class SettingsTab(QWidget):
         app = QApplication.instance()
         app.setPalette(dark_palette)
         
-        # Stile aggiuntivo per componenti specifici
         dark_stylesheet = """
-            QWidget {
-                background-color: #1e1e1e;
-                color: #eaeaea;
-                border: none;
-            }
             QTabWidget::pane {
-                border: 1px solid #444;
-                background: #2d2d2d;
+                border: 1px solid #3a5066;
+                background: #1e2a38;
             }
             QTabBar::tab {
-                background: #333;
-                color: #eaeaea;
-                padding: 14px 22px;
-                font-size: 18px;
-                border: 1px solid #444;
+                background: #2a3b4d;
+                color: #00ccff;
+                padding: 12px 20px;
+                font-size: 16px;
+                font-weight: bold;
+                border: 1px solid #3a5066;
                 border-bottom: none;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
             }
             QTabBar::tab:selected {
-                background: #2d2d2d;
-                margin-bottom: -1px;
-            }
-            QFrame#batteryFrame, QFrame#rangeFrame, QFrame#infoFrame {
-                background-color: #2d2d2d;
-                border: 1px solid #444;
-                border-radius: 8px;
-            }
-            QLabel#mainTitle, QLabel#mediaTitle, QLabel#mapTitle, QLabel#settingsTitle {
-                color: #42a5f5;
-            }
-            QLabel#batteryLabel, QLabel#rangeTitle, QLabel#infoTitle {
-                color: #eaeaea;
-            }
-            QLabel#rangeValue {
-                color: #4caf50;
-            }
-            QLabel#wltpLabel, QLabel#calcLabel, QLabel#infoText {
-                color: #bbb;
-            }
-            QLabel#carImagePlaceholder, QLabel#mapPlaceholder {
-                background-color: #333;
-                color: #bbb;
-                border: 2px dashed #666;
-            }
-            QProgressBar#batteryProgress {
-                border: 2px solid #555;
-                border-radius: 5px;
-                text-align: center;
-                color: white;
-            }
-            QProgressBar#batteryProgress::chunk {
-                background-color: #4caf50;
-            }
-            QPushButton#resetButton, QPushButton#refreshButton, 
-            QPushButton#btButton, QPushButton#volumeButton,
-            QPushButton#mapButton, QPushButton#settingsButton {
-                background-color: #424242;
-                color: white;
-                border-radius: 6px;
-                border: 1px solid #555;
-            }
-            QPushButton#resetButton:hover, QPushButton#refreshButton:hover, 
-            QPushButton#btButton:hover, QPushButton#volumeButton:hover,
-            QPushButton#mapButton:hover, QPushButton#settingsButton:hover {
-                background-color: #555;
-            }
-            QListWidget#devicesList {
-                background-color: #2d2d2d;
-                color: #eaeaea;
-                border: 1px solid #444;
-                border-radius: 5px;
+                background: #1e2a38;
+                color: #00ff88;
             }
         """
         app.setStyleSheet(dark_stylesheet)
         
     def apply_light_style(self):
-        """Ripristina lo stile light mode"""
         app = QApplication.instance()
         app.setPalette(app.style().standardPalette())
         
-        # Stile light mode
         light_stylesheet = """
-            QWidget {
-                background-color: #c8f5ff;
-                color: black;
-                border: none;
-            }
             QTabWidget::pane {
-                border: 1px solid #ccc;
-                background: white;
+                border: 1px solid #3a5066;
+                background: #c8f5ff;
             }
             QTabBar::tab {
-                background: #e0e0e0;
-                color: black;
-                padding: 14px 22px;
-                font-size: 18px;
-                border: 1px solid #ccc;
+                background: #2a3b4d;
+                color: #00ccff;
+                padding: 12px 20px;
+                font-size: 16px;
+                font-weight: bold;
+                border: 1px solid #3a5066;
                 border-bottom: none;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
             }
             QTabBar::tab:selected {
-                background: white;
-                margin-bottom: -1px;
-            }
-            QFrame#batteryFrame, QFrame#rangeFrame {
-                background-color: #f0f0f0;
-                border-radius: 8px;
-            }
-            QFrame#infoFrame {
-                background-color: #00cc66;
-                border-radius: 8px;
-            }
-            QLabel#mainTitle {
+                background: #c8f5ff;
                 color: #0057a8;
-            }
-            QLabel#mediaTitle, QLabel#mapTitle, QLabel#settingsTitle {
-                color: #333;
-            }
-            QLabel#rangeValue {
-                color: #007744;
-            }
-            QLabel#infoTitle, QLabel#infoText {
-                color: white;
-            }
-            QLabel#carImagePlaceholder, QLabel#mapPlaceholder {
-                background-color: #e0e0e0;
-                color: #666;
-                border: 2px dashed #999;
-            }
-            QProgressBar#batteryProgress {
-                border: 2px solid #0057a8;
-                border-radius: 5px;
-                text-align: center;
-            }
-            QProgressBar#batteryProgress::chunk {
-                background-color: #007744;
-            }
-            QPushButton#resetButton {
-                background-color: #ff6666;
-                color: white;
-                border-radius: 6px;
-            }
-            QPushButton#resetButton:hover {
-                background-color: #ff3333;
-            }
-            QPushButton#refreshButton, QPushButton#btButton {
-                background-color: #0057a8;
-                color: white;
-                border-radius: 6px;
-            }
-            QPushButton#refreshButton:hover, QPushButton#btButton:hover {
-                background-color: #003d7a;
-            }
-            QPushButton#volumeButton {
-                background-color: #f0f0f0;
-                color: #333;
-                border-radius: 50px;
-                border: 2px solid #ccc;
-            }
-            QPushButton#volumeButton:hover {
-                background-color: #e0e0e0;
-            }
-            QPushButton#mapButton {
-                background-color: #00cc66;
-                color: white;
-                border-radius: 6px;
-            }
-            QPushButton#mapButton:hover {
-                background-color: #00aa44;
-            }
-            QPushButton#settingsButton {
-                background-color: #666;
-                color: white;
-                border-radius: 6px;
-            }
-            QPushButton#settingsButton:hover {
-                background-color: #444;
-            }
-            QListWidget#devicesList {
-                background-color: white;
-                color: black;
-                border: 1px solid #ccc;
-                border-radius: 5px;
             }
         """
         app.setStyleSheet(light_stylesheet)
 
 
-class MainWindow(QWidget):
+class BluecarMonitor(QWidget):
+    """Classe principale dell'applicazione Bluecar Monitor"""
     def __init__(self):
         super().__init__()
-        self.battery_value = 0
-        self.est_range_km = 0
-        self.wltp_range_km = 200
-        self.avg_speed = 0
-        self.trip_km = 0
+        self.setWindowTitle("Bluecar Monitor")
+        self.setFixedSize(800, 480)
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        
+        # Sfondo principale con gradiente automotive
+        self.setAutoFillBackground(True)
+        palette = self.palette()
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(20, 30, 40))
+        gradient.setColorAt(1, QColor(10, 15, 25))
+        palette.setBrush(QPalette.Window, gradient)
+        self.setPalette(palette)
+
+        self.battery_value = 80 if test == 1 else 0
+        self.est_range_km = 120 if test == 1 else 0
+        self.wltp_range_km = 160
+        self.avg_speed = 45 if test == 1 else 43
+        self.trip_km = 15.5 if test == 1 else 0.0
+
         self.signals = DataSignals()
-        self.signals.updated.connect(self.update_ui)
+        self.signals.updated.connect(self.refresh_ui)
+
         self.init_ui()
-        self.start_data_thread()
+
+        if test == 0:
+            self.start_recalc_thread()
+        else:
+            self.start_test_thread()
 
     def init_ui(self):
-        self.setWindowTitle("Bluecar Monitor")
-        self.setGeometry(100, 100, 1200, 700)
-        self.setMinimumSize(1000, 600)
-
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
         self.tabs = QTabWidget()
-        self.tabs.setFont(QFont("Segoe UI", 18))
-        self.tabs.setObjectName("mainTabs")
+        self.tabs.setFont(QFont("Arial", 14, QFont.Bold))
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #3a5066;
+                background: #1e2a38;
+            }
+            QTabBar::tab {
+                background: #2a3b4d;
+                color: #00ccff;
+                padding: 12px 20px;
+                font-size: 16px;
+                font-weight: bold;
+                border: 1px solid #3a5066;
+                border-bottom: none;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+            }
+            QTabBar::tab:selected {
+                background: #1e2a38;
+                color: #00ff88;
+            }
+        """)
 
         self.trip_tab = TripTab(self)
         self.media_tab = MediaTab(self)
         self.map_tab = MapTab(self)
         self.settings_tab = SettingsTab(self)
 
-        self.tabs.addTab(self.trip_tab, "Trip")
-        self.tabs.addTab(self.media_tab, "Media")
-        self.tabs.addTab(self.map_tab, "Mappa")
-        self.tabs.addTab(self.settings_tab, "Impostazioni")
+        self.tabs.addTab(self.trip_tab, "🚗 Trip")
+        self.tabs.addTab(self.media_tab, "🎵 Media")
+        self.tabs.addTab(self.map_tab, "🗺️ Mappa")
+        self.tabs.addTab(self.settings_tab, "⚙️ Impostazioni")
 
-        main_layout.addWidget(self.tabs)
-        self.setLayout(main_layout)
+        layout.addWidget(self.tabs)
+        self.setLayout(layout)
+        self.refresh_ui()
 
-    def start_data_thread(self):
-        self.data_thread = threading.Thread(target=self.data_loop, daemon=True)
-        self.data_thread.start()
+    def refresh_ui(self):
+        self.trip_tab.refresh_ui(self.battery_value, self.est_range_km,
+                                 self.wltp_range_km, self.avg_speed, self.trip_km)
 
-    def data_loop(self):
+    def start_recalc_thread(self):
+        thread = threading.Thread(target=self.ricalcolo, daemon=True)
+        thread.start()
+
+    def start_test_thread(self):
+        thread = threading.Thread(target=self.simula_dati, daemon=True)
+        thread.start()
+
+    def ricalcolo(self):
+        global last, trip_km
         while True:
-            if test == 1:
-                import random
-                self.battery_value = random.randint(20, 100)
-                self.avg_speed = random.uniform(30.0, 80.0)
-                self.trip_km = random.uniform(5.0, 50.0)
-                self.est_range_km = algokm(self.battery_value)
-            else:
-                if monitorBAT is not None:
-                    self.battery_value = monitorBAT.get_battery_percentage()
-                    self.est_range_km = algokm(self.battery_value)
+            if monitorBAT is not None:
+                charge = monitorBAT.get_charge()
+                self.battery_value = charge
+                rimanente = algokm(charge)
+                self.trip_km = trip_km
+                if rimanente == 0.0 and last != 0:
+                    self.est_range_km = last
                 else:
-                    self.battery_value = 0
-                    self.est_range_km = 0
+                    self.est_range_km = rimanente
+                    last = rimanente
+                self.avg_speed = media
+                self.signals.updated.emit()
+            else:
+                time.sleep(1)
 
+    def simula_dati(self):
+        import random
+        while True:
+            self.battery_value = max(5, min(100, self.battery_value + random.randint(-2, 1)))
+            self.est_range_km = max(0, self.est_range_km + random.uniform(-1, 0.5))
+            self.avg_speed = max(0, self.avg_speed + random.uniform(-2, 2))
+            self.trip_km = max(0, self.trip_km + random.uniform(0, 0.2))
             self.signals.updated.emit()
             time.sleep(2)
-
-    def update_ui(self):
-        self.trip_tab.refresh_ui(
-            self.battery_value,
-            self.est_range_km,
-            self.wltp_range_km,
-            self.avg_speed,
-            self.trip_km
-        )
 
 
 if __name__ == "__main__":
@@ -1036,6 +1125,6 @@ if __name__ == "__main__":
     settings = SettingsTab()
     settings.apply_light_style()
     
-    window = MainWindow()
-    window.show()
+    monitor = BluecarMonitor()
+    monitor.show()
     sys.exit(app.exec_())
