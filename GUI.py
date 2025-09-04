@@ -410,26 +410,64 @@ def rileva_dispositivi():
             ["bluetoothc.exe", "dispositivi"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            encoding='utf-8',  # Aggiungi encoding esplicito
+            errors='ignore'    # Ignora errori di decoding
         )
         try:
-            output, error = proc.communicate(timeout=1)
+            output, error = proc.communicate(timeout=5)  # Aumenta timeout a 5 secondi
         except subprocess.TimeoutExpired:
             proc.kill()
             output, error = proc.communicate()
 
+        # Debug: stampa l'output per vedere cosa viene ricevuto
+        print(f"Output completo: {repr(output)}")
+        print(f"Errori: {repr(error)}")
+
         for riga in output.splitlines():
             riga = riga.strip()
+            print(f"Riga elaborata: {repr(riga)}")  # Debug
+            
+            # Salta righe vuote o di stato
             if not riga or riga.startswith("Ricerca dispositivi"):
                 continue
+            
+            # Cerca il formato nome@id
             if '@' in riga:
-                nome, dev_id = riga.split('@', 1)
+                try:
+                    # Dividi al primo @
+                    parts = riga.split('@', 1)
+                    nome = parts[0].strip()
+                    dev_id = '@' + parts[1].strip()  # Aggiungi @ all'inizio dell'ID
+                    
+                    # Filtra dispositivi non validi
+                    if nome and dev_id and len(dev_id) > 1:
+                        dispositivi_rilevati.append((nome, dev_id))
+                        print(f"Dispositivo trovato: {nome} -> {dev_id}")  # Debug
+                except Exception as e:
+                    print(f"Errore parsing riga '{riga}': {e}")
+                    continue
+            
+            # Alternative: potrebbero esserci altri formati
+            elif '\\' in riga and any(keyword in riga for keyword in ['BTHENUM', 'VID', 'PID']):
+                # Probabilmente è un ID dispositivo diretto
+                nome = "Dispositivo Sconosciuto"
+                dev_id = riga.strip()
                 dispositivi_rilevati.append((nome, dev_id))
+                print(f"Dispositivo trovato (formato alternativo): {nome} -> {dev_id}")
+
     except FileNotFoundError:
         print("⚠️ bluetoothc.exe non trovato!")
     except Exception as e:
-        print("Errore rileva_dispositivi:", e)
+        print(f"Errore rileva_dispositivi: {e}")
+    
+    print(f"Dispositivi finali: {dispositivi_rilevati}")  # Debug
     return dispositivi_rilevati
+
+
+
+
+
 
 
 class MediaTab(QWidget):
@@ -604,15 +642,22 @@ class MediaTab(QWidget):
         self.devices_list.clear()
         dispositivi = rileva_dispositivi()
         for nome, dev_id in dispositivi:
-            item = QListWidgetItem(f"📱 {nome}")
+            # Pulisci il nome da caratteri speciali
+            nome_pulito = nome.replace('@', '').replace('\\', '').strip()
+            if not nome_pulito:
+                nome_pulito = "Dispositivo Sconosciuto"
+        
+            item = QListWidgetItem(f"📱 {nome_pulito}")
             item.setFont(QFont("Arial", 12))
             item.setData(Qt.UserRole, dev_id)
             self.devices_list.addItem(item)
+            print(f"Aggiunto alla lista: {nome_pulito} -> {dev_id}")  # Debug
 
     def connect_device(self):
         item = self.devices_list.currentItem()
         if item:
-            dev_id = item.data(Qt.UserRole)
+            dev_id = item.data(Qt.UserRole)[1:]
+           
             try:
                 proc = subprocess.Popen(
                     ["bluetoothc.exe", "dispositivi", "connetti", dev_id]
@@ -1059,12 +1104,12 @@ class BluecarMonitor(QWidget):
 
         self.trip_tab = TripTab(self)
         self.media_tab = MediaTab(self)
-        self.map_tab = MapTab(self)
+        #self.map_tab = MapTab(self)
         self.settings_tab = SettingsTab(self)
 
         self.tabs.addTab(self.trip_tab, "🚗 Trip")
         self.tabs.addTab(self.media_tab, "🎵 Media")
-        self.tabs.addTab(self.map_tab, "🗺️ Mappa")
+        #self.tabs.addTab(self.map_tab, "🗺️ Mappa")
         self.tabs.addTab(self.settings_tab, "⚙️ Impostazioni")
 
         layout.addWidget(self.tabs)
