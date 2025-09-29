@@ -8,7 +8,6 @@ Prerequisiti Windows:
       CNCA1 ↔ CNCB1   → rinominare CNCA1 = COM101, CNCB1 = COM201
 2. Collegare il vostro software di navigazione a COM200
    e il monitor delle statistiche a COM201.
-3. Avviare questo script con i privilegi di amministratore se necessario.
 """
 
 import serial
@@ -309,3 +308,4 @@ if __name__ == "__main__":
         print("1. Le porte seriali siano disponibili")
         print("2. Il GPS sia collegato e funzionante")
         print("3. I driver virtuali siano configurati correttamente")
+
