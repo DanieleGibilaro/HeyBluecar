@@ -1161,10 +1161,11 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("Fusion"))
     
-    # Applica stile iniziale (light mode)
+    # Applica stile iniziale (light mode) lo stile rimane non completamente modificabile (ho sbagliato a buttare il codice in un software per aid programming :( rimane nel todo)
     settings = SettingsTab()
     settings.apply_light_style()
     
     monitor = BluecarMonitor()
     monitor.show()
     sys.exit(app.exec_())
+
